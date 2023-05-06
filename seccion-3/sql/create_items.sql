@@ -6,8 +6,8 @@ CREATE TABLE public.items
     customer_name VARCHAR(255) NOT NULL,
     order_date date NOT NULL,
     product VARCHAR(255) NOT NULL,
-    quantity INT NOT NULL,
-    price NUMERIC NOT NULL,
+    quantity INTEGER NOT NULL CHECK(quantity > 0), 
+    price NUMERIC NOT NULL CHECK(price >= 0)
     PRIMARY KEY (id)
 );
 

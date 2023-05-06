@@ -158,7 +158,7 @@ func deleteItem(w http.ResponseWriter, r *http.Request) {
 	for i, item := range items {
 		if item.ID == parametros["id"] {
 			items = append(items[:i], items[i+1:]...)
-			fmt.Fprintf(w, "La tarea con el ID %d fue eliminada", item.ID)
+			fmt.Fprintf(w, "La tarea con el ID %v fue eliminada", item.ID)
 			return
 		}
 	}
