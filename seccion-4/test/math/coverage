@@ -1,0 +1,3 @@
+mode: set
+testmodule/math.go:4.30,6.2 1 1
+testmodule/math.go:9.35,11.2 1 0
