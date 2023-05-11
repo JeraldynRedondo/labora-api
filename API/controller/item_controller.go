@@ -13,8 +13,6 @@ import (
 	"my_api_project/service"
 	"net/http"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -91,8 +89,8 @@ func GetItemsPaginated(w http.ResponseWriter, r *http.Request) {
 
 func GetItemById(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
-	Items, err := service.GetItems()
 
+	var item model.Item
 	parameters := mux.Vars(request)
 	id, err := strconv.Atoi(parameters["id"])
 	if err != nil {
@@ -102,35 +100,31 @@ func GetItemById(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	for _, item := range Items {
-		if item.ID == id {
-			json.NewEncoder(response).Encode(item)
-			return
-		}
+	item, err = service.GetItemId(id)
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusInternalServerError)
 	}
-	json.NewEncoder(response).Encode(&model.Item{})
+
+	json.NewEncoder(response).Encode(item)
 }
 
 func GetItemByName(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
-	Items, err := service.GetItems()
-	if err != nil {
-		http.Error(response, err.Error(), http.StatusBadRequest)
-		return
-	}
-	parameters := mux.Vars(request)
 
-	for _, item := range Items {
-		if strings.EqualFold(item.Name, parameters["name"]) {
-			json.NewEncoder(response).Encode(item)
-			return
-		}
+	parameters := mux.Vars(request)
+	name := parameters["name"]
+
+	items, err := service.GetItemName(name)
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusInternalServerError)
 	}
-	json.NewEncoder(response).Encode(&model.Item{})
+
+	json.NewEncoder(response).Encode(items)
 }
 
 func CreateItem(response http.ResponseWriter, request *http.Request) {
 	var newItem model.Item
+	var items []model.Item
 
 	err := json.NewDecoder(request.Body).Decode(&newItem)
 	if err != nil {
@@ -146,13 +140,18 @@ func CreateItem(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	items := service.getItems()
+	items, err = service.GetItems()
+	if err != nil {
+		response.WriteHeader(http.StatusBadRequest)
+		response.Write([]byte("Error al procesar la solicitud"))
+		return
+	}
 
 	Json(response, http.StatusOK, items)
 }
 
 func UpdateItem(response http.ResponseWriter, request *http.Request) {
-	Items, err := service.GetItems()
+	items, err := service.GetItems()
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
@@ -173,24 +172,17 @@ func UpdateItem(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	for i, item := range Items {
-		if item.ID == id {
-			itemUpdate, err = service.UpdateItem(id, itemUpdate)
-			if err != nil {
-				http.Error(response, err.Error(), http.StatusBadRequest)
-				return
-			}
-			items := service.getItems()
-			Json(response, http.StatusOK, items)
-			return
-		}
+	itemUpdate, err = service.UpdateItem(id, itemUpdate)
+	if err != nil {
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
 	}
-
-	response.Write([]byte("Could not update item"))
+	items, err = service.GetItems()
+	Json(response, http.StatusOK, items)
 }
 
 func DeleteItem(response http.ResponseWriter, request *http.Request) {
-	Items, err := service.GetItems()
+	items, err := service.GetItems()
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
@@ -202,61 +194,14 @@ func DeleteItem(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	for i, item := range Items {
-		if item.ID == id {
-			_, err = service.DeleteItem(id, item)
-			if err != nil {
-				http.Error(response, err.Error(), http.StatusBadRequest)
-				return
-			}
-			items := service.getItems()
-			Json(response, http.StatusOK, items)
-			return
-		}
-	}
-	response.Write([]byte("Item could not be removed"))
-}
-
-func EditarItemHandler(response http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	idStr := vars["id"]
-
-	// Convertir el ID de string a int
-	id, err := strconv.Atoi(idStr)
+	_, err = service.DeleteItem(id)
 	if err != nil {
-		response.WriteHeader(http.StatusBadRequest)
-		response.Write([]byte("El ID debe ser un número"))
+		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
 	}
+	items, err = service.GetItems()
+	Json(response, http.StatusOK, items)
 
-	// Leer el item a actualizar del body de la solicitud
-	var itemToUpdate model.Item
-	err = json.NewDecoder(request.Body).Decode(&itemToUpdate)
-	if err != nil {
-		response.WriteHeader(http.StatusBadRequest)
-		response.Write([]byte("Error al procesar la solicitud"))
-		return
-	}
-
-	// Parsear la fecha en el formato deseado
-	t, err := time.Parse(time.RFC3339, itemToUpdate.OrderDate)
-	if err != nil {
-		response.WriteHeader(http.StatusBadRequest)
-		response.Write([]byte("La fecha debe estar en formato ISO 8601"))
-		return
-	}
-	itemToUpdate.OrderDate = t.Format("2006-01-02")
-
-	// Actualizar el item en la base de datos
-	updatedItem, err := service.UpdateItemByID(id, itemToUpdate)
-	if err != nil {
-		response.WriteHeader(http.StatusInternalServerError)
-		response.Write([]byte("Error al actualizar el item"))
-		return
-	}
-
-	// Escribir el item actualizado en la respuesta
-	Json(response, http.StatusOK, updatedItem)
 }
 
 func Root(w http.ResponseWriter, r *http.Request) {

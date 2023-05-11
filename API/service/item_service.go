@@ -14,12 +14,12 @@ func GetItems() ([]model.Item, error) {
 	rows, err := Db.Query("SELECT * FROM items")
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil, err
 	}
 
 	for rows.Next() {
 		var item model.Item
-		err := rows.Scan(&item.Id, &item.Customer_name, &item.Order_date, &item.Product, &item.Quantity, &item.Price)
+		err := rows.Scan(&item.ID, &item.Customer_name, &item.Order_date, &item.Product, &item.Quantity, &item.Price)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -50,7 +50,7 @@ func GetItemsPerPage(pages, itemsPerPage int) ([]model.Item, int, error) {
 	var newListItems []model.Item
 	for rows.Next() {
 		var item model.Item
-		err := rows.Scan(&item.ID, &item.CustomerName, &item.OrderDate, &item.Product, &item.Quantity, &item.Price)
+		err := rows.Scan(&item.ID, &item.Customer_name, &item.Order_date, &item.Product, &item.Quantity, &item.Price)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -63,14 +63,44 @@ func GetItemsPerPage(pages, itemsPerPage int) ([]model.Item, int, error) {
 	return newListItems, count, nil
 }
 
-func createItem(newItem model.Item) (model.Item, error) {
+func GetItemId(id int) (model.Item, error) {
+	var item model.Item
+	err := Db.QueryRow("SELECT * FROM items WHERE id=$1", id).Scan(&item.ID, &item.Customer_name, &item.Order_date, &item.Product, &item.Quantity, &item.Price)
+	if err != nil {
+		return model.Item{}, err
+	}
+	return item, nil
+}
+
+func GetItemName(name string) ([]model.Item, error) {
+	var items []model.Item
+	var item model.Item
+	query := fmt.Sprintf("SELECT * FROM items WHERE customer_name LIKE '%%%s%%'", name)
+	rows, err := Db.Query(query)
+	if err != nil {
+		return items, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err := rows.Scan(&item.ID, &item.Customer_name, &item.Order_date, &item.Product, &item.Quantity, &item.Price)
+		if err != nil {
+			return items, err
+		}
+		items = append(items, item)
+	}
+
+	return items, nil
+}
+
+func CreateItem(newItem model.Item) (model.Item, error) {
 
 	// Insertar el nuevo item en la base de datos
 	insertStatement := `INSERT INTO items (customer_name, order_date, product, quantity, price)
                         VALUES ($1, $2, $3, $4, $5)`
 	_, err := Db.Exec(insertStatement, newItem.Customer_name, newItem.Order_date, newItem.Product, newItem.Quantity, newItem.Price)
 	if err != nil {
-		return nil, err
+		return model.Item{}, err
 	}
 	return newItem, nil
 }
@@ -78,21 +108,20 @@ func createItem(newItem model.Item) (model.Item, error) {
 func UpdateItem(id int, item model.Item) (model.Item, error) {
 	var updatedItem model.Item
 	row := Db.QueryRow("UPDATE items SET customer_name = $1, order_date = $2, product = $3, quantity = $4, price = $5 WHERE id = $6 RETURNING *",
-		item.CustomerName, item.OrderDate, item.Product, item.Quantity, item.Price, id)
-	err := row.Scan(&updatedItem.ID, &updatedItem.CustomerName, &updatedItem.OrderDate, &updatedItem.Product, &updatedItem.Quantity, &updatedItem.Price)
+		item.Customer_name, item.Order_date, item.Product, item.Quantity, item.Price, id)
+	err := row.Scan(&updatedItem.ID, &updatedItem.Customer_name, &updatedItem.Order_date, &updatedItem.Product, &updatedItem.Quantity, &updatedItem.Price)
 	if err != nil {
-		fmt.Println(err)
-		return nil, err
+		return model.Item{}, err
 	}
 	return updatedItem, nil
 }
 
-func DeleteItem(id int, item model.Item) (model.Item, error) {
+func DeleteItem(id int) (model.Item, error) {
 	var deleteItem model.Item
 	query := fmt.Sprintf("DELETE FROM items WHERE id = %d", id)
 	_, err := Db.Exec(query)
 	if err != nil {
-		return nil, err
+		return model.Item{}, err
 	}
 	return deleteItem, nil
 }

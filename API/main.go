@@ -15,15 +15,17 @@ func main() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/", controller.Root).Methods("GET")
-	router.HandleFunc("/items", controller.GetItems).Methods("GET")
+	router.HandleFunc("/items", controller.GetAllItems).Methods("GET")
+	router.HandleFunc("/items/page", controller.GetItemsPaginated).Methods("GET")
 	router.HandleFunc("/items/id/{id}", controller.GetItemById).Methods("GET")
 	router.HandleFunc("/items/name/{name}", controller.GetItemByName).Methods("GET")
+
 	router.HandleFunc("/items", controller.CreateItem).Methods("POST")
 	router.HandleFunc("/items/{id}", controller.UpdateItem).Methods("PUT")
 	router.HandleFunc("/items/{id}", controller.DeleteItem).Methods("DELETE")
 
 	service.Db.PingOrDie()
-	var portNumber int = 9999
+	portNumber := ":3000"
 	if err := config.StartServer(portNumber, router); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}

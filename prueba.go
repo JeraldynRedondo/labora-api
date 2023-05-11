@@ -1,19 +1,13 @@
+package api
+
+/*
 package main
 
 import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"strconv"
-	"time"
-
-	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 )
 
+/*
 func main() {
 	router := mux.NewRouter()
 
@@ -222,3 +216,4 @@ func deleteItem(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "Usuario no encontrado")
 }
+*/

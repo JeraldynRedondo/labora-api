@@ -11,7 +11,7 @@ import (
 var items []Item
 
 type Item struct {
-	Id            int       `json:"id"`
+	ID            int       `json:"id"`
 	Customer_name string    `json:"customerName"`
 	Order_date    time.Time `json:"orderDate"`
 	Product       string    `json:"product"`
