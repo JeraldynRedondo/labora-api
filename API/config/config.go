@@ -5,27 +5,22 @@ Sirve para manejar la configuración de la aplicación, como la conexión a la b
 package config
 
 import (
-	"database/sql"
 	"fmt"
-	"log"
-
-	_ "github.com/lib/pq"
+	"net/http"
+	"time"
 )
 
-const (
-	host        = "localhost"
-	port        = "5432"
-	dbName      = "labora-proyect-1"
-	rolName     = "postgres"
-	rolPassword = "1234"
-)
-
-func Connect_BD() (*sql.DB, error) {
-	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, rolName, rolPassword, dbName)
-	dbConn, err := sql.Open("postgres", psqlInfo)
-	if err != nil {
-		log.Fatal(err)
+func StartServer(port string, router http.Handler) error {
+	servidor := &http.Server{
+		Handler:      router,
+		Addr:         port,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
 	}
-	fmt.Println("Successful connection to the database:", dbConn)
-	return dbConn, err
+
+	fmt.Printf("Starting Server on port %s...\n", port)
+	if err := servidor.ListenAndServe(); err != nil {
+		return fmt.Errorf("Error while starting up Server: '%v'", err)
+	}
+	return nil
 }
