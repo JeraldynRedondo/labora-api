@@ -13,3 +13,6 @@ CREATE TABLE public.items
 
 ALTER TABLE IF EXISTS public.items
     OWNER to postgres;
+
+ALTER TABLE IF EXISTS public.items
+    ADD COLUMN details VARCHAR(255);

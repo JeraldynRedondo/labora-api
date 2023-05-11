@@ -17,4 +17,5 @@ type Item struct {
 	Product       string    `json:"product"`
 	Quantity      int       `json:"quantity"`
 	Price         int       `json:"price"`
+	Details       string    `json:"details"`
 }

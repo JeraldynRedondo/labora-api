@@ -204,6 +204,27 @@ func DeleteItem(response http.ResponseWriter, request *http.Request) {
 
 }
 
+func ItemDetails(response http.ResponseWriter, request *http.Request) {
+
+	var updateItem model.Item
+	parameters := mux.Vars(request)
+	id, err := strconv.Atoi(parameters["id"])
+	if err != nil {
+		fmt.Println(err)
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	updateItem, err = service.UpdateItemDetails(id)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(response, err.Error(), http.StatusBadRequest)
+		return
+	}
+	Json(response, http.StatusOK, updateItem)
+
+}
+
 func Root(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("You are on the root path")
 }

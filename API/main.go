@@ -17,6 +17,7 @@ func main() {
 	router.HandleFunc("/", controller.Root).Methods("GET")
 	router.HandleFunc("/items", controller.GetAllItems).Methods("GET")
 	router.HandleFunc("/items/page", controller.GetItemsPaginated).Methods("GET")
+	router.HandleFunc("/items/details/{id}", controller.ItemDetails).Methods("GET")
 	router.HandleFunc("/items/id/{id}", controller.GetItemById).Methods("GET")
 	router.HandleFunc("/items/name/{name}", controller.GetItemByName).Methods("GET")
 
