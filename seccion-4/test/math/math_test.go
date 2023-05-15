@@ -16,7 +16,7 @@ var factTests = []factTest{
 	factTest{0, 1},
 }
 
-func TestAdd(t *testing.T) {
+func TestFact(t *testing.T) {
 
 	for _, test := range factTests {
 		if output := Factorial(test.arg); output != test.expected {
