@@ -105,6 +105,8 @@ func GetItemById(response http.ResponseWriter, request *http.Request) {
 		http.Error(response, err.Error(), http.StatusInternalServerError)
 	}
 
+	item.TotalPrice = item.CalculatedTotalPrice()
+
 	json.NewEncoder(response).Encode(item)
 }
 
@@ -123,43 +125,35 @@ func GetItemByName(response http.ResponseWriter, request *http.Request) {
 }
 
 func CreateItem(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("Content-Type", "application/json")
 	var newItem model.Item
-	var items []model.Item
 
 	err := json.NewDecoder(request.Body).Decode(&newItem)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteHeader(http.StatusBadRequest)
-		response.Write([]byte("Error al procesar la solicitud"))
+		response.Write([]byte("Error processing the request"))
 		return
 	}
 
 	newItem, err = service.CreateItem(newItem)
 	if err != nil {
+		fmt.Println(err)
 		response.WriteHeader(http.StatusBadRequest)
-		response.Write([]byte("Error al procesar la solicitud"))
+		response.Write([]byte("Error processing the request"))
 		return
 	}
 
-	items, err = service.GetItems()
-	if err != nil {
-		response.WriteHeader(http.StatusBadRequest)
-		response.Write([]byte("Error al procesar la solicitud"))
-		return
-	}
-
-	Json(response, http.StatusOK, items)
+	json.NewEncoder(response).Encode(newItem)
 }
 
 func UpdateItem(response http.ResponseWriter, request *http.Request) {
-	items, err := service.GetItems()
-	if err != nil {
-		http.Error(response, err.Error(), http.StatusBadRequest)
-		return
-	}
+	response.Header().Set("Content-Type", "application/json")
+
 	parameters := mux.Vars(request)
 	var itemUpdate model.Item
 
-	err = json.NewDecoder(request.Body).Decode(&itemUpdate)
+	err := json.NewDecoder(request.Body).Decode(&itemUpdate)
 	defer request.Body.Close()
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusBadRequest)
@@ -177,8 +171,8 @@ func UpdateItem(response http.ResponseWriter, request *http.Request) {
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
 	}
-	items, err = service.GetItems()
-	Json(response, http.StatusOK, items)
+
+	json.NewEncoder(response).Encode(itemUpdate)
 }
 
 func DeleteItem(response http.ResponseWriter, request *http.Request) {

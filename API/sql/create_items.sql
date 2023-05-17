@@ -16,3 +16,9 @@ ALTER TABLE IF EXISTS public.items
 
 ALTER TABLE IF EXISTS public.items
     ADD COLUMN details VARCHAR(255);
+
+ALTER TABLE IF EXISTS public.items
+		ADD COLUMN total_price INTEGER;
+		
+ALTER TABLE IF EXISTS public.items
+		ADD COLUMN view_count INTEGER;

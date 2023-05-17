@@ -15,10 +15,10 @@ type Item struct {
 	Price         int       `json:"price"`
 	Details       string    `json:"details"`
 	TotalPrice    int       `json:"totalPrice"`
+	ViewCount     int       `json:"viewCount"`
 }
 
 type ItemDB struct {
-	ID            int       `json:"id"`
 	Customer_name string    `json:"customerName"`
 	Order_date    time.Time `json:"orderDate"`
 	Product       string    `json:"product"`
