@@ -8,12 +8,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// DbConnection contiene un puntero a la base de datos SQL.
-type DbConnection struct {
+// PostgresDBHandler contains a pointer to the SQL database.
+type PostgresDBHandler struct {
 	*sql.DB
 }
 
-var Db DbConnection
+var Db PostgresDBHandler
 
 const (
 	host        = "localhost"
@@ -23,12 +23,14 @@ const (
 	rolPassword = "1234"
 )
 
-func (db *DbConnection) PingOrDie() {
+// PingOrDie it is a function that sends a ping to the server and returns an error if it does not receive the information.
+func (db *PostgresDBHandler) PingOrDie() {
 	if err := db.Ping(); err != nil {
 		log.Fatalf("Cannot reach database, error: %v", err)
 	}
 }
 
+// DeleteItem it is a function that connects to the database
 func Connect_DB() {
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, rolName, rolPassword, dbName)
 	dbConn, err := sql.Open("postgres", psqlInfo)
@@ -36,9 +38,9 @@ func Connect_DB() {
 		log.Fatal(err)
 	}
 	fmt.Println("Successful connection to the database:", dbConn)
-	Db = DbConnection{dbConn}
+	Db = PostgresDBHandler{dbConn}
 	Db.PingOrDie()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error while database connection: %v", err)
 	}
 }

@@ -9,19 +9,22 @@ import (
 	"time"
 )
 
+// GetItems it is a function that makes a query and returns all the items in the database.
 func GetItems() ([]model.Item, error) {
 	items := make([]model.Item, 0)
-	rows, err := Db.Query("SELECT * FROM items ORDER BY id")
+	query := "SELECT * FROM items ORDER BY id"
+	rows, err := Db.Query(query)
 	if err != nil {
-		fmt.Println(err)
-		return nil, err
+		return nil, fmt.Errorf("Error querying database: %w", err)
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var item model.Item
 		err := rows.Scan(&item.ID, &item.Customer_name, &item.Order_date, &item.Product, &item.Quantity, &item.Price, &item.Details, &item.TotalPrice, &item.ViewCount)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("Error extracting item: %v", err)
 			continue
 		}
 		items = append(items, item)
@@ -30,30 +33,36 @@ func GetItems() ([]model.Item, error) {
 	return items, nil
 }
 
+// GetItemsPerPage it is a function that queries a database and returns a number of items per page.
 func GetItemsPerPage(pages, itemsPerPage int) ([]model.Item, int, error) {
-	// Calcular el índice inicial y el límite de elementos en función de la página actual y los elementos por página
+
+	//Calculate the initial index and item limit based on the current page and items per page.
 	start := (pages - 1) * itemsPerPage
 
-	// Obtener el número total de filas en la tabla items
+	//Get the total number of rows in the items table
 	var count int
-	err := Db.QueryRow("SELECT COUNT(*) FROM items").Scan(&count)
+	query := "SELECT COUNT(*) FROM items"
+	err := Db.QueryRow(query).Scan(&count)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("Error querying the count in database: %w", err)
 	}
 
-	// Obtener la lista de elementos correspondientes a la página actual
-	rows, err := Db.Query("SELECT * FROM items ORDER BY id OFFSET $1 LIMIT $2", start, itemsPerPage)
+	// Get the list of elements corresponding to the current page
+	query = "SELECT * FROM items ORDER BY id OFFSET $1 LIMIT $2"
+	rows, err := Db.Query(query, start, itemsPerPage)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("Error querying database: %w", err)
 	}
+
 	defer rows.Close()
 
 	var newListItems []model.Item
+
 	for rows.Next() {
 		var item model.Item
 		err := rows.Scan(&item.ID, &item.Customer_name, &item.Order_date, &item.Product, &item.Quantity, &item.Price, &item.Details, &item.TotalPrice, &item.ViewCount)
 		if err != nil {
-			return nil, 0, err
+			return nil, 0, fmt.Errorf("Error extracting item: %w", err)
 		}
 		newListItems = append(newListItems, item)
 	}
@@ -64,30 +73,39 @@ func GetItemsPerPage(pages, itemsPerPage int) ([]model.Item, int, error) {
 	return newListItems, count, nil
 }
 
+// GetItemId it is a function that performs a query by Item id and returns the item that matches.
 func GetItemId(id int) (model.Item, error) {
 	var item model.Item
-	UpdateViewCount(id)
-	err := Db.QueryRow("SELECT * FROM items WHERE id=$1", id).Scan(&item.ID, &item.Customer_name, &item.Order_date, &item.Product, &item.Quantity, &item.Price, &item.Details, &item.TotalPrice, &item.ViewCount)
+
+	//Increase the count of views of the item
+	updateViewCount(id)
+	query := "SELECT * FROM items WHERE id=$1"
+
+	err := Db.QueryRow(query, id).Scan(&item.ID, &item.Customer_name, &item.Order_date, &item.Product, &item.Quantity, &item.Price, &item.Details, &item.TotalPrice, &item.ViewCount)
 	if err != nil {
-		return model.Item{}, err
+		return model.Item{}, fmt.Errorf("Error querying database: %w", err)
 	}
+
 	return item, nil
 }
 
+// GetItemName it is a function that performs a query by Item Name and returns the items that match.
 func GetItemName(name string) ([]model.Item, error) {
 	var items []model.Item
 	var item model.Item
-	query := fmt.Sprintf("SELECT * FROM items WHERE customer_name ILIKE '%%%s%%'", name)
-	rows, err := Db.Query(query)
+
+	query := "SELECT * FROM items WHERE customer_name ILIKE $1"
+	rows, err := Db.Query(query, "%"+name+"%")
 	if err != nil {
-		return items, err
+		return items, fmt.Errorf("Error querying database: %w", err)
 	}
+
 	defer rows.Close()
 
 	for rows.Next() {
 		err := rows.Scan(&item.ID, &item.Customer_name, &item.Order_date, &item.Product, &item.Quantity, &item.Price, &item.Details, &item.TotalPrice, &item.ViewCount)
 		if err != nil {
-			return items, err
+			return items, fmt.Errorf("Error extracting item: %w", err)
 		}
 		items = append(items, item)
 	}
@@ -95,115 +113,125 @@ func GetItemName(name string) ([]model.Item, error) {
 	return items, nil
 }
 
+// CreateItem is a function that creates an Item in the database.
 func CreateItem(newItem model.Item) (model.Item, error) {
+
 	details, err := getDetails()
 	if err != nil {
-		return model.Item{}, err
+		return model.Item{}, fmt.Errorf("Error getting details: %w", err)
 	}
+
 	newItem.TotalPrice = newItem.CalculatedTotalPrice()
 	// Insertar el nuevo item en la base de datos
-	insertStatement := `INSERT INTO items (customer_name, order_date, product, quantity, price,details,total_price ,view_count)
+	query := `INSERT INTO items (customer_name, order_date, product, quantity, price,details,total_price ,view_count)
                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`
-	row := Db.QueryRow(insertStatement, newItem.Customer_name, time.Now(), newItem.Product, newItem.Quantity, newItem.Price, details, newItem.TotalPrice, 0)
+	row := Db.QueryRow(query, newItem.Customer_name, time.Now(), newItem.Product, newItem.Quantity, newItem.Price, details, newItem.TotalPrice, 0)
 
 	err = row.Scan(&newItem.ID, &newItem.Customer_name, &newItem.Order_date, &newItem.Product, &newItem.Quantity, &newItem.Price, &newItem.Details, &newItem.TotalPrice, &newItem.ViewCount)
 	if err != nil {
-		return model.Item{}, err
-	}
-	if err != nil {
-		return model.Item{}, err
+		return model.Item{}, fmt.Errorf("Error extracting item: %w", err)
 	}
 
 	return newItem, nil
 }
 
+// UpdateItem it is a function that updates an item by id.
 func UpdateItem(id int, item model.Item) (model.Item, error) {
 	var updatedItem model.Item
 
 	details, err := getDetails()
 	if err != nil {
-		return model.Item{}, err
+		return model.Item{}, fmt.Errorf("Error getting details: %w", err)
 	}
 	item.TotalPrice = item.CalculatedTotalPrice()
 
-	row := Db.QueryRow("UPDATE items SET customer_name = $1, order_date = $2, product = $3, quantity = $4, price = $5, details = $6, total_price=$7 WHERE id = $8 RETURNING *",
-		item.Customer_name, time.Now(), item.Product, item.Quantity, item.Price, details, item.TotalPrice, id)
+	query := "UPDATE items SET customer_name = $1, order_date = $2, product = $3, quantity = $4, price = $5, details = $6, total_price=$7 WHERE id = $8 RETURNING *"
+	row := Db.QueryRow(query, item.Customer_name, time.Now(), item.Product, item.Quantity, item.Price, details, item.TotalPrice, id)
 	err = row.Scan(&updatedItem.ID, &updatedItem.Customer_name, &updatedItem.Order_date, &updatedItem.Product, &updatedItem.Quantity, &updatedItem.Price, &updatedItem.Details, &updatedItem.TotalPrice, &updatedItem.ViewCount)
 	if err != nil {
-		return model.Item{}, err
-	}
-	if err != nil {
-		return model.Item{}, err
+		return model.Item{}, fmt.Errorf("Error extracting item: %w", err)
 	}
 
 	return updatedItem, nil
 }
 
+// DeleteItem it is a function that updates an item by id.
 func DeleteItem(id int) (model.Item, error) {
 	var deleteItem model.Item
-	query := fmt.Sprintf("DELETE FROM items WHERE id = %d", id)
-	_, err := Db.Exec(query)
+
+	query := "DELETE FROM items WHERE id = ?"
+	_, err := Db.Exec(query, id)
 	if err != nil {
-		return model.Item{}, err
+		return model.Item{}, fmt.Errorf("Error querying database: %w", err)
 	}
+
 	return deleteItem, nil
 }
 
+// getDetails it is a function that consumes a service that returns a string to get the details of an item.
 func getDetails() (string, error) {
 	// Realizamos la petición a la API de loripsum
 	url := fmt.Sprintf("http://loripsum.net/api/1/short")
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println(err)
-		return "", err
+		return "", fmt.Errorf("Error getting details of the service: %w", err)
 	}
+
 	defer resp.Body.Close()
 
-	// Leemos la respuesta de la API
+	// Read the API response
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Error in the body of the response of the service: %w", err)
 	}
 
 	data := string(body)
+
 	return data, nil
 }
 
+// UpdateItemDetails it is a function that updates the Details of an item.
 func UpdateItemDetails(id int) (model.Item, error) {
-	// Obtenemos el párrafo del objeto desde la API de loripsum
+	// Get the paragraph of the object from API
 	detail, err := getDetails()
 	if err != nil {
 		fmt.Println(err)
-		return model.Item{}, err
+		return model.Item{}, fmt.Errorf("Error getting details: %w", err)
 	}
 
-	// Actualizamos la columna "detalles" en la tabla "items"
+	// Update the "details" column in the "items" table
 	var updatedItem model.Item
-	row := Db.QueryRow("UPDATE items SET details=$1 WHERE id=$2 RETURNING *",
-		detail, id)
+	query := "UPDATE items SET details=$1 WHERE id=$2 RETURNING *"
+
+	row := Db.QueryRow(query, detail, id)
 	err = row.Scan(&updatedItem.ID, &updatedItem.Customer_name, &updatedItem.Order_date, &updatedItem.Product, &updatedItem.Quantity, &updatedItem.Price, &updatedItem.Details, &updatedItem.TotalPrice, &updatedItem.ViewCount)
 	if err != nil {
 		fmt.Println(err)
-		return model.Item{}, err
+		return model.Item{}, fmt.Errorf("Error extracting item: %w", err)
 	}
+
 	return updatedItem, nil
 }
 
-// Funcio que actualiza los precios totales de los items
+// UpdateTotalPriceItem it is a function that updates the total prices of the items
 func UpdateTotalPriceItem(item model.Item) (model.Item, error) {
+
 	totalPrice := item.CalculatedTotalPrice()
-	//fmt.Printf("El precio total del item %d con precio de %d y cantidad %d es %d \n", item.ID, item.Price, item.Quantity, totalPrice)
-	row := Db.QueryRow("UPDATE items SET total_price=$1 WHERE id = $2 RETURNING *", totalPrice, item.ID)
+	query := "UPDATE items SET total_price=$1 WHERE id = $2 RETURNING *"
+	row := Db.QueryRow(query, totalPrice, item.ID)
 	err := row.Scan(&item.ID, &item.Customer_name, &item.Order_date, &item.Product, &item.Quantity, &item.Price, &item.Details, &item.TotalPrice, &item.ViewCount)
 	if err != nil {
-		return model.Item{}, err
+		return model.Item{}, fmt.Errorf("Error extracting item: %w", err)
 	}
+
 	return item, nil
 }
 
 var m sync.Mutex
 
-func UpdateViewCount(id int) {
+// updateViewCount it is a function that updates the view count of an item.
+func updateViewCount(id int) {
 	m.Lock()
 	Db.QueryRow("UPDATE items SET view_count = view_count + $1 WHERE id = $2 RETURNING *",
 		1, id)

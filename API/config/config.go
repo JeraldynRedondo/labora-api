@@ -1,7 +1,3 @@
-/*
-Sirve para manejar la configuración de la aplicación, como la conexión a la base de datos.
-*/
-
 package config
 
 import (
@@ -10,6 +6,7 @@ import (
 	"time"
 )
 
+// StartServer it is a function that turns on the server
 func StartServer(port string, router http.Handler) error {
 	servidor := &http.Server{
 		Handler:      router,

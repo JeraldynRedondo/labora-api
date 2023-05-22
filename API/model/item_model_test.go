@@ -6,12 +6,12 @@ import (
 )
 
 var itemTest = []Item{
-	Item{1, "John Doe", time.Now(), "Televisor", 2, 150, " ", 0},
-	Item{2, "Jane Smith", time.Now(), "Celular", 3, 200, " ", 0},
-	Item{3, "Michael Smith", time.Now(), "Estufa", 1, 55, " ", 0},
-	Item{4, "Harry Styles", time.Now(), "Ventilador", 3, 70, " ", 0},
-	Item{5, "Zayn Malik", time.Now(), "Mouse", 3, 45, " ", 0},
-	Item{6, "Bob Johnson", time.Now(), "Lavadora", 1, 49, " ", 0},
+	{1, "John Doe", time.Now(), "Televisor", 2, 150, " ", 0, 0},
+	{2, "Jane Smith", time.Now(), "Celular", 3, 200, " ", 0, 0},
+	{3, "Michael Smith", time.Now(), "Estufa", 1, 55, " ", 0, 0},
+	{4, "Harry Styles", time.Now(), "Ventilador", 3, 70, " ", 0, 0},
+	{5, "Zayn Malik", time.Now(), "Mouse", 3, 45, " ", 0, 0},
+	{6, "Bob Johnson", time.Now(), "Lavadora", 1, 49, " ", 0, 0},
 }
 
 var expectedTotalValue = []int{300, 600, 55, 210, 135, 49}

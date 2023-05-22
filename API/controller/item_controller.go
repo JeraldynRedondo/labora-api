@@ -1,8 +1,3 @@
-/*
-Aquí se ejecutan peticiones HTTP, como GET, POST, PUT y DELETE, y llamarás a los servicios
-correspondientes.
-*/
-
 package controller
 
 import (
@@ -17,7 +12,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func Json(response http.ResponseWriter, status int, data interface{}) {
+// ResponseJson it is a function that sends the http response in Json format.
+func ResponseJson(response http.ResponseWriter, status int, data interface{}) {
 	bytes, err := json.Marshal(data)
 	if err != nil {
 		fmt.Errorf("error while marshalling object %v, trace: %+v", data, err)
@@ -32,17 +28,19 @@ func Json(response http.ResponseWriter, status int, data interface{}) {
 	}
 }
 
+// GetItems it is a function that returns all the items from a request.
 func GetAllItems(response http.ResponseWriter, _ *http.Request) {
 	items, err := service.GetItems()
 	if err != nil {
 		response.WriteHeader(http.StatusInternalServerError)
-		response.Write([]byte("Error getting items"))
+		response.Write([]byte("Error getting items, bad querying database"))
 		return
 	}
 
-	Json(response, http.StatusOK, items)
+	ResponseJson(response, http.StatusOK, items)
 }
 
+// GetItemsPaginated it is a function that returns a number of items per page from a request.
 func GetItemsPaginated(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	pageUser := r.URL.Query().Get("page")
@@ -57,8 +55,8 @@ func GetItemsPaginated(w http.ResponseWriter, r *http.Request) {
 		itemsPerPage = 5
 	}
 
-	// Obtener la lista de elementos paginada
-	newList, count, err := service.GetItemsPerPage(page, itemsPerPage)
+	// Get the paginated list of items
+	items, count, err := service.GetItemsPerPage(page, itemsPerPage)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -66,19 +64,19 @@ func GetItemsPaginated(w http.ResponseWriter, r *http.Request) {
 
 	totalPages := int(math.Ceil(float64(count) / float64(itemsPerPage)))
 
-	// Crear un mapa que contiene información sobre la paginación
+	// Create a map containing information about pagination
 	paginationInfo := map[string]interface{}{
 		"totalPages":  totalPages,
 		"currentPage": page,
 	}
 
-	// Crear un mapa que contiene la lista de elementos y la información de paginación
+	// Create a map containing the list of items and the pagination information
 	responseData := map[string]interface{}{
-		"items":      newList,
+		"items":      items,
 		"pagination": paginationInfo,
 	}
 
-	// Codificar el mapa de respuesta en formato JSON y enviar en la respuesta HTTP
+	// Encode the response map in JSON format and send in the HTTP response
 	jsonData, err := json.Marshal(responseData)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -87,6 +85,7 @@ func GetItemsPaginated(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
+// GetItemById it is a function that returns the item that matches the id from a request.
 func GetItemById(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
 
@@ -94,7 +93,6 @@ func GetItemById(response http.ResponseWriter, request *http.Request) {
 	parameters := mux.Vars(request)
 	id, err := strconv.Atoi(parameters["id"])
 	if err != nil {
-		// Manejar el error de la conversión
 		response.WriteHeader(http.StatusBadRequest)
 		response.Write([]byte("ID must be a number"))
 		return
@@ -105,11 +103,10 @@ func GetItemById(response http.ResponseWriter, request *http.Request) {
 		http.Error(response, err.Error(), http.StatusInternalServerError)
 	}
 
-	item.TotalPrice = item.CalculatedTotalPrice()
-
-	json.NewEncoder(response).Encode(item)
+	ResponseJson(response, http.StatusOK, item)
 }
 
+// GetItemByName it is a function that returns the items that match the name from a request.
 func GetItemByName(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
 
@@ -121,9 +118,10 @@ func GetItemByName(response http.ResponseWriter, request *http.Request) {
 		http.Error(response, err.Error(), http.StatusInternalServerError)
 	}
 
-	json.NewEncoder(response).Encode(items)
+	ResponseJson(response, http.StatusOK, items)
 }
 
+// CreateItem it is a function that creates an Item from a request.
 func CreateItem(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
 	var newItem model.Item
@@ -138,15 +136,14 @@ func CreateItem(response http.ResponseWriter, request *http.Request) {
 
 	newItem, err = service.CreateItem(newItem)
 	if err != nil {
-		fmt.Println(err)
-		response.WriteHeader(http.StatusBadRequest)
-		response.Write([]byte("Error processing the request"))
+		http.Error(response, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	json.NewEncoder(response).Encode(newItem)
+	ResponseJson(response, http.StatusOK, newItem)
 }
 
+// UpdateItem it is a function that updates an Item by id from a request.
 func UpdateItem(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
 
@@ -162,7 +159,8 @@ func UpdateItem(response http.ResponseWriter, request *http.Request) {
 
 	id, err := strconv.Atoi(parameters["id"])
 	if err != nil {
-		http.Error(response, err.Error(), http.StatusBadRequest)
+		response.WriteHeader(http.StatusBadRequest)
+		response.Write([]byte("ID must be a number"))
 		return
 	}
 
@@ -172,9 +170,10 @@ func UpdateItem(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	json.NewEncoder(response).Encode(itemUpdate)
+	ResponseJson(response, http.StatusOK, itemUpdate)
 }
 
+// DeleteItem it is a function that delete an Item by id from a request.
 func DeleteItem(response http.ResponseWriter, request *http.Request) {
 	items, err := service.GetItems()
 	if err != nil {
@@ -184,7 +183,8 @@ func DeleteItem(response http.ResponseWriter, request *http.Request) {
 	parameters := mux.Vars(request)
 	id, err := strconv.Atoi(parameters["id"])
 	if err != nil {
-		http.Error(response, err.Error(), http.StatusBadRequest)
+		response.WriteHeader(http.StatusBadRequest)
+		response.Write([]byte("ID must be a number"))
 		return
 	}
 
@@ -193,19 +193,22 @@ func DeleteItem(response http.ResponseWriter, request *http.Request) {
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	items, err = service.GetItems()
-	Json(response, http.StatusOK, items)
+	ResponseJson(response, http.StatusOK, items)
 
 }
 
+// ItemDetails it is a function that updates the Item details by id from a request.
 func ItemDetails(response http.ResponseWriter, request *http.Request) {
-
 	var updateItem model.Item
+
 	parameters := mux.Vars(request)
+
 	id, err := strconv.Atoi(parameters["id"])
 	if err != nil {
-		fmt.Println(err)
-		http.Error(response, err.Error(), http.StatusBadRequest)
+		response.WriteHeader(http.StatusBadRequest)
+		response.Write([]byte("ID must be a number"))
 		return
 	}
 
@@ -215,8 +218,8 @@ func ItemDetails(response http.ResponseWriter, request *http.Request) {
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
 	}
-	Json(response, http.StatusOK, updateItem)
 
+	ResponseJson(response, http.StatusOK, updateItem)
 }
 
 func Root(w http.ResponseWriter, r *http.Request) {
