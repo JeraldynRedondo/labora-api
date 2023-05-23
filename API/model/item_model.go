@@ -1,7 +1,6 @@
 package model //
 
 import (
-	"my_api_project/model"
 	"time"
 )
 
@@ -22,16 +21,4 @@ type Item struct {
 func (item Item) CalculatedTotalPrice() int {
 	totalPrice := item.Price * item.Quantity
 	return totalPrice
-}
-
-// DBHandler is an interface that implements the methods of the database.
-type DBHandler interface {
-	GetItems() ([]model.Item, error)
-	GetItemsPerPage(pages, itemsPerPage int) ([]model.Item, int, error)
-	GetItemId(id int) (model.Item, error)
-	GetItemName(name string) ([]model.Item, error)
-	CreateItem(newItem model.Item)
-	UpdateItem(id int, item model.Item) (model.Item, error)
-	DeleteItem(id int) (model.Item, error)
-	UpdateItemDetails(id int) (model.Item, error)
 }

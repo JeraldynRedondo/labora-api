@@ -12,13 +12,17 @@ import (
 
 func main() {
 
-	service.Connect_DB()
+	var dbHandler, error = service.Connect_DB()
+	if error != nil {
+		log.Fatal(error)
+	}
+	itemService := &service.ItemService{DbHandler: dbHandler}
+	controller := &controller.ItemController{ItemService: *itemService}
 	router := mux.NewRouter()
 
-	router.HandleFunc("/", controller.Root).Methods("GET")
 	router.HandleFunc("/items", controller.GetAllItems).Methods("GET")
 	router.HandleFunc("/items/page", controller.GetItemsPaginated).Methods("GET")
-	router.HandleFunc("/items/details/{id}", controller.ItemDetails).Methods("GET")
+	//router.HandleFunc("/items/details/{id}", controller.ItemDetails).Methods("GET")
 	router.HandleFunc("/items/id/{id}", controller.GetItemById).Methods("GET")
 	router.HandleFunc("/items/name/{name}", controller.GetItemByName).Methods("GET")
 
@@ -35,7 +39,6 @@ func main() {
 	// Add CORS middleware to all routes
 	handler := corsOptions(router)
 
-	service.Db.PingOrDie()
 	portNumber := ":3000"
 	if err := config.StartServer(portNumber, handler); err != nil {
 		log.Fatalf("Error starting server: %v", err)

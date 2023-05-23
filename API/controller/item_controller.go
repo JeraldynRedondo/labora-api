@@ -12,6 +12,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type ItemController struct {
+	ItemService service.ItemService
+}
+
 // ResponseJson it is a function that sends the http response in Json format.
 func ResponseJson(response http.ResponseWriter, status int, data interface{}) {
 	bytes, err := json.Marshal(data)
@@ -29,8 +33,8 @@ func ResponseJson(response http.ResponseWriter, status int, data interface{}) {
 }
 
 // GetItems it is a function that returns all the items from a request.
-func GetAllItems(response http.ResponseWriter, _ *http.Request) {
-	items, err := service.GetItems()
+func (c *ItemController) GetAllItems(response http.ResponseWriter, _ *http.Request) {
+	items, err := c.ItemService.GetItems()
 	if err != nil {
 		response.WriteHeader(http.StatusInternalServerError)
 		response.Write([]byte("Error getting items, bad querying database"))
@@ -41,7 +45,7 @@ func GetAllItems(response http.ResponseWriter, _ *http.Request) {
 }
 
 // GetItemsPaginated it is a function that returns a number of items per page from a request.
-func GetItemsPaginated(w http.ResponseWriter, r *http.Request) {
+func (c *ItemController) GetItemsPaginated(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	pageUser := r.URL.Query().Get("page")
 	itemsUser := r.URL.Query().Get("itemsPerPage")
@@ -56,7 +60,7 @@ func GetItemsPaginated(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the paginated list of items
-	items, count, err := service.GetItemsPerPage(page, itemsPerPage)
+	items, count, err := c.ItemService.GetItemsPerPage(page, itemsPerPage)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -86,7 +90,7 @@ func GetItemsPaginated(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetItemById it is a function that returns the item that matches the id from a request.
-func GetItemById(response http.ResponseWriter, request *http.Request) {
+func (c *ItemController) GetItemById(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
 
 	var item model.Item
@@ -98,7 +102,7 @@ func GetItemById(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	item, err = service.GetItemId(id)
+	item, err = c.ItemService.GetItemId(id)
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusInternalServerError)
 	}
@@ -107,13 +111,13 @@ func GetItemById(response http.ResponseWriter, request *http.Request) {
 }
 
 // GetItemByName it is a function that returns the items that match the name from a request.
-func GetItemByName(response http.ResponseWriter, request *http.Request) {
+func (c *ItemController) GetItemByName(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
 
 	parameters := mux.Vars(request)
 	name := parameters["name"]
 
-	items, err := service.GetItemName(name)
+	items, err := c.ItemService.GetItemName(name)
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusInternalServerError)
 	}
@@ -122,7 +126,7 @@ func GetItemByName(response http.ResponseWriter, request *http.Request) {
 }
 
 // CreateItem it is a function that creates an Item from a request.
-func CreateItem(response http.ResponseWriter, request *http.Request) {
+func (c *ItemController) CreateItem(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
 	var newItem model.Item
 
@@ -134,7 +138,7 @@ func CreateItem(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	newItem, err = service.CreateItem(newItem)
+	newItem, err = c.ItemService.CreateItem(newItem)
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusInternalServerError)
 		return
@@ -144,7 +148,7 @@ func CreateItem(response http.ResponseWriter, request *http.Request) {
 }
 
 // UpdateItem it is a function that updates an Item by id from a request.
-func UpdateItem(response http.ResponseWriter, request *http.Request) {
+func (c *ItemController) UpdateItem(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
 
 	parameters := mux.Vars(request)
@@ -164,7 +168,7 @@ func UpdateItem(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	itemUpdate, err = service.UpdateItem(id, itemUpdate)
+	itemUpdate, err = c.ItemService.UpdateItem(id, itemUpdate)
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
@@ -174,12 +178,7 @@ func UpdateItem(response http.ResponseWriter, request *http.Request) {
 }
 
 // DeleteItem it is a function that delete an Item by id from a request.
-func DeleteItem(response http.ResponseWriter, request *http.Request) {
-	items, err := service.GetItems()
-	if err != nil {
-		http.Error(response, err.Error(), http.StatusBadRequest)
-		return
-	}
+func (c *ItemController) DeleteItem(response http.ResponseWriter, request *http.Request) {
 	parameters := mux.Vars(request)
 	id, err := strconv.Atoi(parameters["id"])
 	if err != nil {
@@ -188,19 +187,19 @@ func DeleteItem(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	_, err = service.DeleteItem(id)
+	err = c.ItemService.DeleteItem(id)
 	if err != nil {
 		http.Error(response, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	items, err = service.GetItems()
-	ResponseJson(response, http.StatusOK, items)
+	ResponseJson(response, http.StatusOK, model.Item{})
 
 }
 
+/*
 // ItemDetails it is a function that updates the Item details by id from a request.
-func ItemDetails(response http.ResponseWriter, request *http.Request) {
+func (c *ItemController) ItemDetails(response http.ResponseWriter, request *http.Request) {
 	var updateItem model.Item
 
 	parameters := mux.Vars(request)
@@ -212,7 +211,7 @@ func ItemDetails(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	updateItem, err = service.UpdateItemDetails(id)
+	updateItem, err = c.ItemService.UpdateItemDetails(id)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(response, err.Error(), http.StatusBadRequest)
@@ -221,7 +220,4 @@ func ItemDetails(response http.ResponseWriter, request *http.Request) {
 
 	ResponseJson(response, http.StatusOK, updateItem)
 }
-
-func Root(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("You are on the root path")
-}
+*/
