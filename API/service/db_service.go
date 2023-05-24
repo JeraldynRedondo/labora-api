@@ -15,8 +15,8 @@ type PostgresDBHandler struct {
 	*sql.DB
 }
 
-// GetCredentials it is a function that returns the credentials from the fiel .env to connect to the database.
-func GetCredentials() (string, string, string, string, string) {
+// getCredentials it is a function that returns the credentials from the fiel .env to connect to the database.
+func getCredentials() (string, string, string, string, string) {
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -34,7 +34,7 @@ func GetCredentials() (string, string, string, string, string) {
 // Connect_DB it is a function that connects to the database
 func Connect_DB() (*PostgresDBHandler, error) {
 
-	host, port, dbName, rolName, rolPassword := GetCredentials()
+	host, port, dbName, rolName, rolPassword := getCredentials()
 
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, rolName, rolPassword, dbName)
 	dbConn, err := sql.Open("postgres", psqlInfo)

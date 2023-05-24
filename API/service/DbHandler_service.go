@@ -129,7 +129,7 @@ func (Db *PostgresDBHandler) CreateItem(newItem model.Item) (model.Item, error) 
 	}
 
 	newItem.TotalPrice = newItem.CalculatedTotalPrice()
-	// Insertar el nuevo item en la base de datos
+	//Insert the new item in the database
 	query := `INSERT INTO items (customer_name, order_date, product, quantity, price,details,total_price ,view_count)
                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`
 	row := Db.QueryRow(query, newItem.Customer_name, time.Now(), newItem.Product, newItem.Quantity, newItem.Price, details, newItem.TotalPrice, 0)
