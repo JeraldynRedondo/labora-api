@@ -17,19 +17,20 @@ type ItemController struct {
 }
 
 // ResponseJson it is a function that sends the http response in Json format.
-func ResponseJson(response http.ResponseWriter, status int, data interface{}) {
+func ResponseJson(response http.ResponseWriter, status int, data interface{}) error {
 	bytes, err := json.Marshal(data)
 	if err != nil {
-		fmt.Errorf("error while marshalling object %v, trace: %+v", data, err)
 		response.WriteHeader(http.StatusInternalServerError)
-		return
+		return fmt.Errorf("error while marshalling object %v, trace: %+v", data, err)
 	}
 	response.Header().Set("Content-Type", "application/json")
 	response.WriteHeader(status)
 	_, err = response.Write(bytes)
 	if err != nil {
-		fmt.Errorf("error while writing bytes to response writer: %+v", err)
+		return fmt.Errorf("error while writing bytes to response writer: %+v", err)
 	}
+
+	return nil
 }
 
 // GetItems it is a function that returns all the items from a request.
