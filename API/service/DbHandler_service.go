@@ -165,7 +165,7 @@ func (Db *PostgresDBHandler) UpdateItem(id int, item model.Item) (model.Item, er
 // DeleteItem it is a function that updates an item by id.
 func (Db *PostgresDBHandler) DeleteItem(id int) error {
 
-	query := "DELETE FROM items WHERE id = ?"
+	query := "DELETE FROM items WHERE id = $1"
 	_, err := Db.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("Error querying database: %w", err)
